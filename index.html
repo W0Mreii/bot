@@ -63,7 +63,7 @@
 
   <div id="stopBtn">Выключить звук 🔇</div>
 
-  <audio id="audio" src="sound.mp3" loop preload="auto"></audio>
+  <audio id="audio" src="sound.mp3" loop preload="auto" crossorigin="anonymous"></audio>
 
   <script>
     const audio = document.getElementById('audio');
@@ -74,9 +74,27 @@
     let x = 50, y = 100;
     let dx = 7, dy = 8;
 
+    function boostVolume() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const source = ctx.createMediaElementSource(audio);
+        const gainNode = ctx.createGain();
+        
+        // Усиление сигнала в 3.5 раза (350% громкости)
+        gainNode.gain.value = 3.5; 
+        
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        if (ctx.state === 'suspended') ctx.resume();
+      } catch (e) {}
+    }
+
     function startPrank() {
       if (started) return;
       started = true;
+
+      boostVolume();
       audio.volume = 1.0;
       audio.play();
 
