@@ -30,6 +30,7 @@
       padding: 16px 22px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       cursor: pointer;
+      z-index: 10;
     }
     .checkbox {
       width: 24px;
@@ -53,6 +54,16 @@
       z-index: 999;
       cursor: default;
     }
+
+    .pig {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 50;
+      will-change: transform;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body onclick="startPrank()">
@@ -73,7 +84,8 @@
     let started = false;
 
     let x = 50, y = 100;
-    let dx = 5, dy = 6; // Стартовая скорость (чуть ниже, чтобы сначала было реально попасть)
+    let dx = 5, dy = 6;
+    const pigs = [];
 
     function boostVolume() {
       try {
@@ -88,6 +100,27 @@
       } catch (e) {}
     }
 
+    function spawnPigs(count) {
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('img');
+        el.className = 'pig';
+        el.src = 'pig.png';
+        const size = Math.floor(Math.random() * 45) + 55;
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        document.body.appendChild(el);
+
+        pigs.push({
+          el: el,
+          size: size,
+          x: Math.random() * (window.innerWidth - size),
+          y: Math.random() * (window.innerHeight - size),
+          dx: (Math.random() * 7 + 3) * (Math.random() < 0.5 ? 1 : -1),
+          dy: (Math.random() * 7 + 3) * (Math.random() < 0.5 ? 1 : -1)
+        });
+      }
+    }
+
     function startPrank() {
       if (started) return;
       started = true;
@@ -98,21 +131,26 @@
 
       box.style.display = 'none';
       btn.style.display = 'block';
-      moveButton();
+      
+      spawnPigs(10);
+      animate();
     }
 
-    // При каждом попадании кнопка ускоряется в 1.35 раза без подсветки
     function speedUp(e) {
       e.preventDefault();
       e.stopPropagation();
 
       if (Math.abs(dx) < 35) dx *= 1.35;
       if (Math.abs(dy) < 35) dy *= 1.35;
+
+      if (pigs.length < 50) {
+        spawnPigs(5);
+      }
     }
 
     btn.addEventListener('pointerdown', speedUp, { passive: false });
 
-    function moveButton() {
+    function animate() {
       const maxX = window.innerWidth - btn.offsetWidth;
       const maxY = window.innerHeight - btn.offsetHeight;
 
@@ -131,7 +169,28 @@
       btn.style.left = x + 'px';
       btn.style.top = y + 'px';
 
-      requestAnimationFrame(moveButton);
+      for (let i = 0; i < pigs.length; i++) {
+        const p = pigs[i];
+        const pMaxX = window.innerWidth - p.size;
+        const pMaxY = window.innerHeight - p.size;
+
+        p.x += p.dx;
+        p.y += p.dy;
+
+        if (p.x <= 0 || p.x >= pMaxX) {
+          p.dx = -p.dx;
+          p.x = Math.max(0, Math.min(p.x, pMaxX));
+        }
+        if (p.y <= 0 || p.y >= pMaxY) {
+          p.dy = -p.dy;
+          p.y = Math.max(0, Math.min(p.y, pMaxY));
+        }
+
+        const flip = p.dx > 0 ? -1 : 1;
+        p.el.style.transform = `translate(${p.x}px, ${p.y}px) scaleX(${flip})`;
+      }
+
+      requestAnimationFrame(animate);
     }
   </script>
 
